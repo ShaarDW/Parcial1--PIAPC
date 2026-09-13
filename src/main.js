@@ -20,6 +20,7 @@ const STATE_COLORS = {
 };
 
 const CAST_PRESENTATION_MS = 500;
+const RESULT_FEEDBACK_MS = 1500;
 const WAIT_MS_MIN = BITE_MIN_WAIT * 1000;
 const WAIT_MS_MAX = BITE_MAX_WAIT * 1000;
 
@@ -34,6 +35,8 @@ const ARROW_BY_KEYCODE = {
 
 class FishingScene extends Phaser.Scene {
   create() {
+    this.money = 0;
+
     this.stateText = this.add
       .text(400, 260, '', {
         fontSize: '32px',
@@ -80,6 +83,12 @@ class FishingScene extends Phaser.Scene {
       KEYCODES.RIGHT,
     ]);
 
+    this.startCastCycle();
+  }
+
+  startCastCycle() {
+    this.currentRarity = null;
+    this.rarityText.setText('');
     this.setFishingState(State.CAST);
     this.time.delayedCall(CAST_PRESENTATION_MS, this.enterWait, [], this);
   }
@@ -204,9 +213,17 @@ class FishingScene extends Phaser.Scene {
     this.qteTimerText.setText('');
 
     this.setFishingState(State.RESULT);
-    this.stateText
-      .setText(outcome === 'success' ? 'Estado: ÉXITO' : 'Estado: FALLO')
-      .setColor(outcome === 'success' ? '#00ff00' : '#ff0000');
+
+    if (outcome === 'success') {
+      this.money += this.currentRarity.reward;
+      this.stateText
+        .setText(`Estado: ÉXITO (+${this.currentRarity.reward})`)
+        .setColor('#00ff00');
+    } else {
+      this.stateText.setText('Estado: FALLO').setColor('#ff0000');
+    }
+
+    this.time.delayedCall(RESULT_FEEDBACK_MS, this.startCastCycle, [], this);
   }
 
   setFishingState(state) {
