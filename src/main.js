@@ -18,49 +18,51 @@ const CAST_PRESENTATION_MS = 500;
 const WAIT_MS_MIN = BITE_MIN_WAIT * 1000;
 const WAIT_MS_MAX = BITE_MAX_WAIT * 1000;
 
+class FishingScene extends Phaser.Scene {
+  create() {
+    this.stateText = this.add
+      .text(400, 260, '', {
+        fontSize: '32px',
+        fontWeight: 'bold',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
+
+    this.rarityText = this.add
+      .text(400, 320, '', {
+        fontSize: '24px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
+
+    this.setFishingState(State.CAST);
+    this.time.delayedCall(CAST_PRESENTATION_MS, this.enterWait, [], this);
+  }
+
+  enterWait() {
+    this.setFishingState(State.WAIT);
+    const waitMs = Phaser.Math.Between(WAIT_MS_MIN, WAIT_MS_MAX);
+    this.time.delayedCall(waitMs, this.enterBite, [], this);
+  }
+
+  enterBite() {
+    this.setFishingState(State.BITE);
+    this.currentRarity = selectRarity();
+    this.rarityText.setText(`Rareza: ${this.currentRarity.label}`);
+  }
+
+  setFishingState(state) {
+    this.stateText.setText(`Estado: ${state}`).setColor(STATE_COLORS[state]);
+  }
+}
+
 const config = {
   type: Phaser.AUTO,
   parent: 'game',
   width: 800,
   height: 600,
   backgroundColor: '#1e90ff',
-  scene: {
-    create() {
-      this.stateText = this.add
-        .text(400, 260, '', {
-          fontSize: '32px',
-          fontWeight: 'bold',
-          color: '#ffffff',
-        })
-        .setOrigin(0.5);
-
-      this.rarityText = this.add
-        .text(400, 320, '', {
-          fontSize: '24px',
-          color: '#ffffff',
-        })
-        .setOrigin(0.5);
-
-      this.setFishingState(State.CAST);
-      this.time.delayedCall(CAST_PRESENTATION_MS, this.enterWait, [], this);
-    },
-
-    enterWait() {
-      this.setFishingState(State.WAIT);
-      const waitMs = Phaser.Math.Between(WAIT_MS_MIN, WAIT_MS_MAX);
-      this.time.delayedCall(waitMs, this.enterBite, [], this);
-    },
-
-    enterBite() {
-      this.setFishingState(State.BITE);
-      this.currentRarity = selectRarity();
-      this.rarityText.setText(`Rareza: ${this.currentRarity.label}`);
-    },
-
-    setFishingState(state) {
-      this.stateText.setText(`Estado: ${state}`).setColor(STATE_COLORS[state]);
-    },
-  },
+  scene: FishingScene,
 };
 
 new Phaser.Game(config);
