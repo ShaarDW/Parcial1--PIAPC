@@ -1,40 +1,43 @@
-# Plantilla PIAPC para repositorios individuales
+# Silly Fishing
 
-Esta plantilla prepara un repositorio publico e individual para proyectos academicos de videojuegos. Es independiente del motor, lenguaje y tipo de juego.
-
-## Como usarla
-
-1. Crea un repositorio individual desde esta plantilla y conserva el commit inicial.
-2. Completa los datos de este archivo y de `GDD.md` cuando la consigna defina el problema de diseno.
-3. Agrega el proyecto creado con el motor elegido, sin mezclar archivos de otros motores.
-4. Incorpora al `.gitignore` las reglas oficiales o recomendadas para ese motor.
-5. Completa los documentos de `docs/` en el orden indicado por `docs/README.md`.
-6. Conserva commits pequenos y revisables durante el desarrollo.
+Proyecto individual PIAPC: juego arcade de pesca.
 
 ## Datos del proyecto
 
-- Estudiante: [PENDIENTE]
+- Estudiante: Juan Thiago Alfaro
 - Materia, comision y anio: [PENDIENTE]
-- Nombre del proyecto: [PENDIENTE]
-- Motor y version: [PENDIENTE]
-- Estado: [PENDIENTE]
+- Nombre del proyecto: Silly Fishing
+- Motor y version: Phaser 4.2.1
+- Estado: En desarrollo (scaffolding completado; gameplay pendiente)
 
 ## Descripcion
 
-[Explica brevemente el juego o prototipo y su objetivo actual.]
+Juego arcade de pesca en el que el jugador captura peces durante una partida de 3 minutos para conseguir la mayor cantidad de dinero posible. El gameplay todavia no esta implementado: el proyecto cuenta con el scaffolding de Phaser 4 (Vite + JavaScript) y una escena base de prueba.
 
 ## Requisitos y ejecucion
 
-[Indica el motor, herramientas, versiones y pasos necesarios para abrir o ejecutar el proyecto.]
+- Entorno verificado: Node.js v24.15.0 y npm 11.12.1.
+- Motor: Phaser 4.2.1.
+- Herramienta de servidor/build: Vite 8.3.0 (configuracion cero, no requiere configuracion propia).
+- Lenguaje: JavaScript.
+
+Pasos:
+
+```
+npm install
+npm run dev      # Servidor local de desarrollo (http://localhost:5173)
+npm run build    # Compilacion de produccion en dist/
+npm run preview  # Previsualizacion del build de produccion
+```
 
 ## Controles
 
-[Describe los controles disponibles o indica que todavia no existen.]
+[PENDIENTE] Los controles de juego estan definidos en el GDD (Z y flechas direccionales), pero no estan implementados todavia.
 
 ## Creditos
 
-[Declara assets, sonidos, tipografias, plugins, codigo, referencias y licencias de terceros.]
+[PENDIENTE]
 
 ## Entrega o demostracion
 
-[Agrega el enlace a una compilacion, video o publicacion cuando la entrega lo requiera.]
+[PENDIENTE]
