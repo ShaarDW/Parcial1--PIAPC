@@ -108,6 +108,32 @@ class FishingScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    this.gameOverTitleText = this.add
+      .text(400, 200, 'PARTIDA TERMINADA', {
+        fontSize: '48px',
+        fontWeight: 'bold',
+        color: '#ff0000',
+      })
+      .setOrigin(0.5)
+      .setVisible(false);
+
+    this.gameOverMoneyText = this.add
+      .text(400, 280, '', {
+        fontSize: '32px',
+        fontWeight: 'bold',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5)
+      .setVisible(false);
+
+    this.gameOverHintText = this.add
+      .text(400, 340, 'Presiona ENTER para reiniciar', {
+        fontSize: '24px',
+        color: '#ffff00',
+      })
+      .setOrigin(0.5)
+      .setVisible(false);
+
     this.input.keyboard.on('keydown', this.onKeyDown, this);
     this.input.keyboard.addCapture([
       KEYCODES.Z,
@@ -115,9 +141,10 @@ class FishingScene extends Phaser.Scene {
       KEYCODES.DOWN,
       KEYCODES.LEFT,
       KEYCODES.RIGHT,
+      KEYCODES.ENTER,
     ]);
 
-    this.startCastCycle();
+    this.startNewGame();
   }
 
   update() {
@@ -152,6 +179,9 @@ class FishingScene extends Phaser.Scene {
     }
 
     if (this.fishingState === State.GAME_OVER) {
+      if (event.keyCode === KEYCODES.ENTER) {
+        this.startNewGame();
+      }
       return;
     }
 
@@ -305,7 +335,51 @@ class FishingScene extends Phaser.Scene {
     this.hudLastSecond = 0;
     this.hudTimeText.setText(`Tiempo: ${formatTime(0)}`);
     this.setFishingState(State.GAME_OVER);
-    this.messageText.setText('Fin de partida').setColor('#ff0000');
+
+    this.hudMoneyText.setVisible(false);
+    this.hudTimeText.setVisible(false);
+    this.hudStateText.setVisible(false);
+
+    this.rarityText.setText('');
+    this.messageText.setText('');
+
+    this.gameOverTitleText.setVisible(true);
+    this.gameOverMoneyText.setText(`Dinero total: $${this.money}`).setVisible(true);
+    this.gameOverHintText.setVisible(true);
+  }
+
+  startNewGame() {
+    this.money = 0;
+    this.currentRarity = null;
+    this.qteResult = null;
+    this.sequence = null;
+    this.qteIndex = 0;
+
+    this.castTimer = this.cancelTimer(this.castTimer);
+    this.waitTimer = this.cancelTimer(this.waitTimer);
+    this.recastTimer = this.cancelTimer(this.recastTimer);
+    this.qteTimer = this.cancelTimer(this.qteTimer);
+    this.qteCountdownTimer = this.cancelTimer(this.qteCountdownTimer);
+
+    this.gameEndTime = this.time.now + GAME_DURATION * 1000;
+    this.hudLastSecond = GAME_DURATION;
+
+    this.hudMoneyText.setVisible(true);
+    this.hudTimeText.setVisible(true);
+    this.hudStateText.setVisible(true);
+    this.gameOverTitleText.setVisible(false);
+    this.gameOverMoneyText.setVisible(false);
+    this.gameOverHintText.setVisible(false);
+
+    this.hudMoneyText.setText(`Dinero: $${this.money}`);
+    this.hudTimeText.setText(`Tiempo: ${formatTime(GAME_DURATION)}`);
+    this.rarityText.setText('');
+    this.messageText.setText('');
+    this.sequenceText.setText('');
+    this.progressText.setText('');
+    this.qteTimerText.setText('');
+
+    this.startCastCycle();
   }
 
   isTimeUp() {
