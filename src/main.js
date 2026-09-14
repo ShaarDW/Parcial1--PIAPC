@@ -29,6 +29,38 @@ const STATE_COLORS = {
 
 const FONT_FAMILY = "'Comic Sans MS', 'Comic Sans', Cursive";
 
+const RARITY_COLORS = {
+  common: '#9fb4c7',
+  rare: '#4ade80',
+  epic: '#7c8cff',
+  legendary: '#ffb300',
+  mythic: '#ff5df0',
+};
+
+const RARITY_HEX = {
+  common: 0x9fb4c7,
+  rare: 0x4ade80,
+  epic: 0x7c8cff,
+  legendary: 0xffb300,
+  mythic: 0xff5df0,
+};
+
+const TIER_LEVEL = {
+  common: 0,
+  rare: 1,
+  epic: 2,
+  legendary: 3,
+  mythic: 4,
+};
+
+const FISH_STYLE = {
+  common: { scale: 0.7 },
+  rare: { scale: 0.8 },
+  epic: { scale: 0.95 },
+  legendary: { scale: 1.1 },
+  mythic: { scale: 1.3 },
+};
+
 const CAST_PRESENTATION_MS = 500;
 const RESULT_FEEDBACK_MS = 1500;
 const WRONGKEY_RED_MS = 1000;
@@ -60,29 +92,49 @@ class FishingScene extends Phaser.Scene {
   create() {
     this.money = 0;
     this.gameEndTime = this.time.now + GAME_DURATION * 1000;
+    this.marineFish = [];
 
     this.makeHookTexture();
     this.makeArrowTexture();
-    this.makeFishTexture();
+    this.makeFishTextures();
+
+    this.shoreGfx = this.add.graphics();
+    this.shoreGfx.fillStyle(0x0a3d5f, 0.5).fillRect(0, 430, 800, 40);
 
     this.waterGfx = this.add.graphics();
     this.waterGfx.fillStyle(0x0a4d8a, 0.55).fillRect(0, 470, 800, 130);
     this.waterGfx.fillStyle(0x7fd0ff, 0.25).fillRect(0, 470, 800, 6);
+
+    this.seaweedGfx = this.add.graphics();
+    this.makeSeaweed();
+
+    this.rodGfx = this.add.graphics();
+    this.rodGfx.lineStyle(7, 0x8b5a2b, 1);
+    this.rodGfx.beginPath();
+    this.rodGfx.moveTo(0, 150);
+    this.rodGfx.lineTo(ROD_X, ROD_Y);
+    this.rodGfx.strokePath();
+    this.rodGfx.fillStyle(0x666666, 1).fillCircle(12, 136, 10);
+    this.rodGfx.lineStyle(4, 0x334455, 1);
+    this.rodGfx.strokeCircle(12, 136, 10);
+
+    this.waveGfx = this.add.graphics();
+    this.waveGfx.setVisible(false);
 
     this.lineGfx = this.add.graphics();
 
     this.hookImage = this.add.image(ROD_X, ROD_Y, 'hook');
     this.hookImage.setVisible(false);
 
-    this.fishImage = this.add.image(HOOK_X, WATER_Y, 'fish');
+    this.fishImage = this.add.image(HOOK_X, WATER_Y, 'fish-common');
     this.fishImage.setVisible(false);
 
     this.hudPanel = this.add.graphics();
     this.hudPanel.fillStyle(0x000000, 0.35).fillRect(0, 0, 800, 56);
 
     this.hudMoneyText = this.add
-      .text(20, 30, `Dinero: $${this.money}`, {
-        fontSize: '20px',
+      .text(20, 16, `$${this.money}`, {
+        fontSize: '28px',
         fontWeight: 'bold',
         fontFamily: FONT_FAMILY,
         color: '#39ff14',
@@ -95,16 +147,8 @@ class FishingScene extends Phaser.Scene {
 
     this.messageText = this.add
       .text(400, 260, '', {
-        fontSize: '32px',
+        fontSize: '40px',
         fontWeight: 'bold',
-        fontFamily: FONT_FAMILY,
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
-
-    this.rarityText = this.add
-      .text(400, 320, '', {
-        fontSize: '24px',
         fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
@@ -123,7 +167,7 @@ class FishingScene extends Phaser.Scene {
     this.qteContainer = this.add.container(0, 0).setVisible(false);
 
     this.qtePanel = this.add.graphics();
-    this.qtePanel.fillStyle(0x000000, 0.3).fillRoundedRect(240, 330, 320, 130, 12);
+    this.updateQtePanel(0xffffff);
 
     this.sequenceText = this.add
       .text(400, 350, '', {
@@ -135,7 +179,7 @@ class FishingScene extends Phaser.Scene {
 
     this.progressText = this.add
       .text(400, 388, '', {
-        fontSize: '18px',
+        fontSize: '20px',
         fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
@@ -143,7 +187,7 @@ class FishingScene extends Phaser.Scene {
 
     this.qteTimerText = this.add
       .text(400, 422, '', {
-        fontSize: '18px',
+        fontSize: '20px',
         fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
@@ -177,7 +221,7 @@ class FishingScene extends Phaser.Scene {
 
     this.gameOverMoneyText = this.add
       .text(400, 260, '', {
-        fontSize: '30px',
+        fontSize: '36px',
         fontWeight: 'bold',
         fontFamily: FONT_FAMILY,
         color: '#ffffff',
@@ -208,19 +252,41 @@ class FishingScene extends Phaser.Scene {
 
     this.titleMainText = this.add
       .text(400, 220, 'SILLY FISHING', {
-        fontSize: '64px',
+        fontSize: '84px',
         fontWeight: 'bold',
         fontFamily: FONT_FAMILY,
         color: '#ffff00',
       })
       .setOrigin(0.5)
-      .setStroke('#000000', 8);
+      .setStroke('#000000', 10)
+      .setShadow(5, 6, '#000000', 8, true, true);
 
     this.titleFish = this.add.graphics();
-    this.titleFish.fillStyle(0xffffff, 1).fillCircle(0, 0, 26);
-    this.titleFish.fillTriangle(-26, 0, -62, -18, -62, 18);
-    this.titleFish.fillStyle(0x000000, 1).fillCircle(12, -8, 4);
+    this.titleFish.fillStyle(0xffcc33, 1);
+    this.titleFish.fillEllipse(0, 0, 130, 74);
+    this.titleFish.fillStyle(0xff9f1c, 1);
+    this.titleFish.fillTriangle(-58, -22, -120, -34, -105, 8);
+    this.titleFish.fillTriangle(-58, 20, -120, 34, -105, -8);
+    this.titleFish.fillTriangle(-12, -30, 4, -60, 20, -30);
+    this.titleFish.fillStyle(0xff9f1c, 0.85);
+    this.titleFish.fillRect(-26, -32, 7, 64);
+    this.titleFish.fillRect(-10, -34, 7, 68);
+    this.titleFish.lineStyle(2, 0xcc8800, 1);
+    this.titleFish.beginPath();
+    this.titleFish.arc(-4, -6, 26, -0.7, 0.7, false);
+    this.titleFish.strokePath();
+    this.titleFish.lineStyle(3, 0x8a5a00, 1);
+    this.titleFish.beginPath();
+    this.titleFish.moveTo(50, 4);
+    this.titleFish.lineTo(62, 10);
+    this.titleFish.strokePath();
+    this.titleFish.fillStyle(0xffffff, 1).fillCircle(38, -12, 9);
+    this.titleFish.fillStyle(0x000000, 1).fillCircle(40, -12, 5);
+    this.titleFish.fillStyle(0xffffff, 1).fillCircle(43, -14, 2);
     this.titleFish.setPosition(400, 330);
+
+    this.titleSwimmerA = this.add.image(-40, 300, 'fish-rare').setAngle(-15).setScale(0.72);
+    this.titleSwimmerB = this.add.image(840, 370, 'fish-epic').setAngle(15).setScale(0.6);
 
     this.titleHintText = this.add
       .text(400, 470, 'Presiona ENTER para continuar', {
@@ -234,16 +300,18 @@ class FishingScene extends Phaser.Scene {
       this.titleDecor,
       this.titleMainText,
       this.titleFish,
+      this.titleSwimmerA,
+      this.titleSwimmerB,
       this.titleHintText,
     ]);
 
     this.controlsScreen = this.add.container(0, 0).setVisible(false);
 
     this.controlsPanel = this.add.graphics();
-    this.controlsPanel.fillStyle(0x000000, 0.35).fillRoundedRect(120, 180, 560, 260, 16);
+    this.controlsPanel.fillStyle(0x000000, 0.35).fillRoundedRect(100, 160, 600, 320, 16);
 
     this.controlsTitleText = this.add
-      .text(400, 140, '¿CÓMO JUGAR?', {
+      .text(400, 130, '¿CÓMO JUGAR?', {
         fontSize: '44px',
         fontWeight: 'bold',
         fontFamily: FONT_FAMILY,
@@ -252,25 +320,46 @@ class FishingScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setStroke('#000000', 6);
 
-    this.controlsLineZ = this.add
-      .text(400, 240, 'Z — Reaccioná cuando el pez muerda', {
-        fontSize: '24px',
+    this.controlsZBadge = this.add.graphics();
+    this.controlsZBadge.fillStyle(0x222222, 1).fillRoundedRect(302, 216, 56, 56, 12);
+    this.controlsZBadge.lineStyle(3, 0xffffff, 1).strokeRoundedRect(302, 216, 56, 56, 12);
+
+    this.controlsZText = this.add
+      .text(330, 244, 'Z', {
+        fontSize: '34px',
+        fontWeight: 'bold',
         fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
       .setOrigin(0.5);
+
+    this.controlsLineZ = this.add
+      .text(390, 244, 'Reaccioná cuando el pez muerda', {
+        fontSize: '20px',
+        fontFamily: FONT_FAMILY,
+        color: '#ffffff',
+      })
+      .setOrigin(0, 0.5);
+
+    this.controlsArrowSprites = [];
+    const arrowXs = [285, 325, 365, 405];
+    const arrowAngles = [0, -90, 180, 90];
+    arrowXs.forEach((ax, i) => {
+      const img = this.add.image(ax, 322, 'arrow').setAngle(arrowAngles[i]).setOrigin(0.5).setTint(0xffffff);
+      this.controlsArrowSprites.push(img);
+    });
 
     this.controlsLineArrows = this.add
-      .text(400, 300, '↑ ↓ ← → — Completá la secuencia', {
-        fontSize: '24px',
+      .text(445, 322, 'Completá la secuencia', {
+        fontSize: '20px',
         fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
-      .setOrigin(0.5);
+      .setOrigin(0, 0.5);
 
     this.controlsLineObjective = this.add
-      .text(400, 360, 'Objetivo: juntá la mayor cantidad de dinero\nantes de que termine el tiempo', {
-        fontSize: '22px',
+      .text(400, 420, 'Objetivo: juntá la mayor cantidad de dinero\nantes de que termine el tiempo', {
+        fontSize: '20px',
         fontFamily: FONT_FAMILY,
         color: '#ffffff',
         align: 'center',
@@ -278,7 +367,7 @@ class FishingScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.controlsHintText = this.add
-      .text(400, 480, 'Presiona ENTER para comenzar', {
+      .text(400, 498, 'Presiona ENTER para comenzar', {
         fontSize: '24px',
         fontFamily: FONT_FAMILY,
         color: '#ffff00',
@@ -288,7 +377,10 @@ class FishingScene extends Phaser.Scene {
     this.controlsScreen.add([
       this.controlsPanel,
       this.controlsTitleText,
+      this.controlsZBadge,
+      this.controlsZText,
       this.controlsLineZ,
+      ...this.controlsArrowSprites,
       this.controlsLineArrows,
       this.controlsLineObjective,
       this.controlsHintText,
@@ -322,6 +414,24 @@ class FishingScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     });
 
+    this.tweens.add({
+      targets: this.titleSwimmerA,
+      x: 840,
+      angle: 15,
+      duration: 14000,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    this.tweens.add({
+      targets: this.titleSwimmerB,
+      x: -40,
+      angle: -15,
+      duration: 16000,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
     this.pulseHint(this.titleHintText);
     this.pulseHint(this.controlsHintText);
     this.pulseHint(this.gameOverHintText);
@@ -340,6 +450,8 @@ class FishingScene extends Phaser.Scene {
       return;
     }
 
+    this.drawWaves();
+
     const remainingMs = Math.max(0, this.gameEndTime - this.time.now);
     this.updateTimeBar(remainingMs);
 
@@ -348,12 +460,41 @@ class FishingScene extends Phaser.Scene {
     }
   }
 
+  drawWaves() {
+    const g = this.waveGfx;
+    const t = this.time.now;
+    g.clear();
+
+    for (let pass = 0; pass < 2; pass++) {
+      const yBase = 470 + pass * 8;
+      const amp = pass === 0 ? 4 : 3;
+      g.lineStyle(3, 0x9fd8ff, pass === 0 ? 0.6 : 0.4);
+      g.beginPath();
+      for (let x = 0; x <= 800; x += 8) {
+        const y = yBase + Math.sin(x * 0.03 + t * 0.002 + pass * 2) * amp;
+        if (x === 0) {
+          g.moveTo(x, y);
+        } else {
+          g.lineTo(x, y);
+        }
+      }
+      g.strokePath();
+    }
+  }
+
   updateTimeBar(remainingMs) {
     const fraction = Math.max(0, Math.min(1, remainingMs / (GAME_DURATION * 1000)));
 
     this.hudTimeBar.clear();
-    this.hudTimeBar.fillStyle(0x000000, 0.6).fillRoundedRect(200, 22, 400, 12, 6);
-    this.hudTimeBar.fillStyle(0x00ccff, 1).fillRoundedRect(200, 22, 400 * fraction, 12, 6);
+    this.hudTimeBar.fillStyle(0x000000, 0.6).fillRoundedRect(420, 22, 360, 12, 6);
+    this.hudTimeBar.fillStyle(0x00ccff, 1).fillRoundedRect(420, 22, 360 * fraction, 12, 6);
+  }
+
+  updateQtePanel(color) {
+    this.qtePanel.clear();
+    this.qtePanel.fillStyle(0x000000, 0.35).fillRoundedRect(240, 330, 320, 130, 12);
+    this.qtePanel.lineStyle(3, color, 1);
+    this.qtePanel.strokeRoundedRect(240, 330, 320, 130, 12);
   }
 
   showTitle() {
@@ -369,10 +510,10 @@ class FishingScene extends Phaser.Scene {
     this.hudTimeBar.setVisible(false);
 
     this.messageText.setVisible(false);
-    this.rarityText.setVisible(false);
     this.biteText.setVisible(false);
 
     this.hideFishingVisuals();
+    this.startBubbles();
   }
 
   showControls() {
@@ -388,7 +529,6 @@ class FishingScene extends Phaser.Scene {
     this.hudTimeBar.setVisible(false);
 
     this.messageText.setVisible(false);
-    this.rarityText.setVisible(false);
     this.biteText.setVisible(false);
 
     this.hideFishingVisuals();
@@ -399,10 +539,10 @@ class FishingScene extends Phaser.Scene {
     this.qteFailTimer = this.cancelTimer(this.qteFailTimer);
 
     this.currentRarity = null;
-    this.rarityText.setText('');
     this.messageText.setText('');
     this.messageText.setScale(1);
     this.biteText.setVisible(false);
+    this.updateQtePanel(0xffffff);
 
     this.setFishingState(State.CAST);
     this.showHookCast();
@@ -460,7 +600,6 @@ class FishingScene extends Phaser.Scene {
     this.setFishingState(State.BITE);
     this.currentRarity = selectRarity();
 
-    this.rarityText.setText(`Rareza: ${this.currentRarity.label}`);
     this.showHookBite();
 
     this.biteText.setText('¡PICA!').setVisible(true).setAlpha(1).setScale(0.6).setColor('#ffffff');
@@ -483,6 +622,7 @@ class FishingScene extends Phaser.Scene {
 
     this.biteText.setVisible(false);
     this.qteContainer.setVisible(true);
+    this.updateQtePanel(RARITY_HEX[this.currentRarity.id]);
     this.showHookQte();
 
     this.qteTimer = this.time.addEvent({
@@ -654,46 +794,83 @@ class FishingScene extends Phaser.Scene {
 
     if (outcome === 'success') {
       this.money += this.currentRarity.reward;
-      this.hudMoneyText.setText(`Dinero: $${this.money}`);
+      this.hudMoneyText.setText(`$${this.money}`);
       this.messageText
         .setText(`ÉXITO (+${this.currentRarity.reward})`)
-        .setColor('#00ff00');
-      this.showRewardFloat(this.currentRarity.reward);
+        .setColor(RARITY_COLORS[this.currentRarity.id]);
+      this.messageText.setScale(0.8);
+      this.tweens.add({
+        targets: this.messageText,
+        scale: 1,
+        duration: 220,
+        ease: 'Back.easeOut',
+      });
+      this.showRewardFloat(this.currentRarity.reward, RARITY_COLORS[this.currentRarity.id]);
       this.flashMoney();
       this.showFishCapture();
+      const tier = TIER_LEVEL[this.currentRarity.id];
+      this.celebrate(RARITY_HEX[this.currentRarity.id], tier);
+      if (tier >= 3) {
+        this.cameras.main.shake(200, 0.01);
+      }
     } else {
-      this.messageText.setText('FALLO').setColor('#ff0000');
+      this.messageText.setText('FALLO').setColor('#ff0000').setScale(0.6);
+      this.tweens.add({
+        targets: this.messageText,
+        scale: 1,
+        duration: 120,
+        yoyo: true,
+        repeat: 1,
+        ease: 'Sine.easeInOut',
+      });
       this.showLineBreak();
     }
-
-    this.messageText.setScale(0.8);
-    this.tweens.add({
-      targets: this.messageText,
-      scale: 1,
-      duration: 220,
-      ease: 'Back.easeOut',
-    });
 
     this.recastTimer = this.time.delayedCall(RESULT_FEEDBACK_MS, this.startCastCycle, [], this);
   }
 
-  showRewardFloat(reward) {
+  showRewardFloat(reward, color) {
     const floatText = this.add
       .text(400, 300, `+$${reward}`, {
-        fontSize: '28px',
+        fontSize: '38px',
         fontWeight: 'bold',
         fontFamily: FONT_FAMILY,
-        color: '#ffd700',
+        color: color || '#ffd700',
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setScale(0.7);
 
     this.tweens.add({
       targets: floatText,
-      y: 230,
+      y: 210,
+      scale: 1.4,
       alpha: 0,
-      duration: 1200,
+      duration: 1400,
+      ease: 'Cubic.easeOut',
       onComplete: () => floatText.destroy(),
     });
+  }
+
+  celebrate(color, tier) {
+    const amount = 8 + tier * 2;
+    const size = 3 + tier;
+    for (let i = 0; i < amount; i++) {
+      const p = this.add.graphics();
+      p.fillStyle(color, 1).fillCircle(0, 0, size);
+      const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+      const dist = Phaser.Math.Between(50, 90 + tier * 25);
+      p.setPosition(HOOK_X, WATER_Y);
+      this.tweens.add({
+        targets: p,
+        x: HOOK_X + Math.cos(angle) * dist,
+        y: WATER_Y + Math.sin(angle) * dist - 40,
+        alpha: 0,
+        scale: 0.3,
+        duration: Phaser.Math.Between(600, 1000),
+        ease: 'Cubic.easeOut',
+        onComplete: () => p.destroy(),
+      });
+    }
   }
 
   flashMoney() {
@@ -741,15 +918,128 @@ class FishingScene extends Phaser.Scene {
     g.destroy();
   }
 
-  makeFishTexture() {
-    const g = this.add.graphics();
-    g.fillStyle(0xffcc33, 1);
-    g.fillTriangle(8, 17, 0, 6, 0, 28);
-    g.fillEllipse(24, 17, 32, 24);
-    g.fillStyle(0xffffff, 1).fillCircle(34, 12, 4);
-    g.fillStyle(0x000000, 1).fillCircle(35, 12, 2);
-    g.generateTexture('fish', 48, 34);
-    g.destroy();
+  makeFishTextures() {
+    const styles = [
+      { key: 'fish-common', color: 0x8ba7bf, w: 34, h: 24, fin: false, belly: null, long: false, crown: false, stripe: null },
+      { key: 'fish-rare', color: 0x4ade80, w: 40, h: 28, fin: true, belly: 0x2f9e51, long: false, crown: false, stripe: null },
+      { key: 'fish-epic', color: 0x7c8cff, w: 44, h: 30, fin: false, belly: 0x4a56c9, long: false, crown: false, stripe: null },
+      { key: 'fish-legendary', color: 0xffb300, w: 50, h: 32, fin: false, belly: 0xcc8a00, long: true, crown: false, stripe: 0x8a5a00 },
+      { key: 'fish-mythic', color: 0xff5df0, w: 56, h: 40, fin: false, belly: 0xb83ba8, long: true, crown: true, stripe: null },
+    ];
+
+    for (const s of styles) {
+      const g = this.add.graphics();
+      const cx = s.w / 2;
+      const cy = s.h / 2;
+
+      g.fillStyle(s.color, 1);
+      g.fillTriangle(cx - s.w * 0.22, cy, cx - s.w * 0.62, cy - s.h * 0.3, cx - s.w * 0.62, cy + s.h * 0.3);
+      g.fillEllipse(cx, cy, s.w * 0.78, s.h * 0.9);
+
+      if (s.belly) {
+        g.fillStyle(s.belly, 1);
+        g.fillEllipse(cx + s.w * 0.04, cy + s.h * 0.12, s.w * 0.6, s.h * 0.5);
+      }
+
+      if (s.fin) {
+        g.fillStyle(s.color, 1);
+        g.fillTriangle(cx - s.w * 0.05, cy - s.h * 0.08, cx - s.w * 0.02, cy - s.h * 0.62, cx + s.w * 0.12, cy - s.h * 0.12);
+      }
+
+      if (s.stripe) {
+        g.fillStyle(s.stripe, 1);
+        g.fillRect(cx - s.w * 0.05, cy - s.h * 0.2, s.w * 0.07, s.h * 0.4);
+      }
+
+      if (s.crown) {
+        g.fillStyle(0xffd700, 1);
+        g.fillTriangle(cx + s.w * 0.28, cy - s.h * 0.1, cx + s.w * 0.2, cy - s.h * 0.62, cx + s.w * 0.02, cy - s.h * 0.1);
+        g.fillTriangle(cx + s.w * 0.38, cy - s.h * 0.12, cx + s.w * 0.44, cy - s.h * 0.5, cx + s.w * 0.26, cy - s.h * 0.16);
+      }
+
+      g.fillStyle(0xffffff, 1).fillCircle(cx + s.w * 0.2, cy - s.h * 0.18, Math.max(2, s.h * 0.12));
+      g.fillStyle(0x000000, 1).fillCircle(cx + s.w * 0.22, cy - s.h * 0.18, Math.max(1.5, s.h * 0.06));
+
+      g.generateTexture(s.key, s.w, s.h);
+      g.destroy();
+    }
+  }
+
+  makeSeaweed() {
+    const blades = [
+      [30, 150, 0x1f9e4f],
+      [55, 200, 0x27b664],
+      [80, 120, 0x1f9e4f],
+      [720, 180, 0x27b664],
+      [750, 130, 0x1f9e4f],
+      [770, 210, 0x27b664],
+    ];
+
+    for (const [x, h, color] of blades) {
+      this.seaweedGfx.lineStyle(5, color, 0.8);
+      this.seaweedGfx.beginPath();
+      this.seaweedGfx.moveTo(x, 600);
+      for (let i = 1; i <= 5; i++) {
+        this.seaweedGfx.lineTo(x + Math.sin(i * 2.1) * 9, 600 - (h * i) / 5);
+      }
+      this.seaweedGfx.strokePath();
+    }
+
+    this.seaweedGfx.fillStyle(0x6b4a2b, 1).fillRoundedRect(15, 585, 40, 15, 6);
+    this.seaweedGfx.fillStyle(0x6b4a2b, 1).fillRoundedRect(705, 585, 50, 15, 6);
+  }
+
+  makeBubble() {
+    const makeOne = () => {
+      const bubble = this.add.graphics();
+      const x = Phaser.Math.Between(80, 720);
+      const y = Phaser.Math.Between(500, 580);
+      bubble.lineStyle(2, 0xffffff, 0.55).strokeCircle(0, 0, Phaser.Math.Between(4, 9));
+      bubble.setPosition(x, y);
+      this.tweens.add({
+        targets: bubble,
+        y: y - Phaser.Math.Between(70, 130),
+        alpha: 0,
+        duration: Phaser.Math.Between(1400, 2200),
+        ease: 'Sine.easeOut',
+        onComplete: () => bubble.destroy(),
+      });
+    };
+
+    makeOne();
+    if (Math.random() < 0.5) {
+      makeOne();
+    }
+  }
+
+  startBubbles() {
+    this.bubbleTimer = this.cancelTimer(this.bubbleTimer);
+    this.bubbleTimer = this.time.addEvent({
+      delay: 450,
+      loop: true,
+      callback: this.makeBubble,
+      callbackScope: this,
+    });
+  }
+
+  makeMarineFish() {
+    const f = this.add.image(0, 0, 'fish-common');
+    f.setTexture('fish-' + Phaser.Utils.Array.GetRandom(['common', 'rare', 'epic', 'mythic']));
+    f.setScale(Phaser.Math.FloatBetween(0.25, 0.5)).setAlpha(0.45);
+    const dir = Phaser.Utils.Array.GetRandom([1, -1]);
+    f.setFlipX(dir === -1);
+    f.setPosition(dir === 1 ? -40 : 840, Phaser.Math.Between(500, 575));
+    this.marineFish.push(f);
+    this.tweens.add({
+      targets: f,
+      x: dir === 1 ? 840 : -40,
+      duration: Phaser.Math.Between(7000, 11000),
+      ease: 'Linear',
+      onComplete: () => {
+        this.marineFish = this.marineFish.filter((m) => m !== f);
+        f.destroy();
+      },
+    });
   }
 
   makeRipple(x, y) {
@@ -857,12 +1147,13 @@ class FishingScene extends Phaser.Scene {
     this.tweens.killTweensOf([this.hookImage, this.fishImage]);
     this.hookImage.setTint(0xffffff);
     this.hookImage.setPosition(HOOK_X, WATER_Y);
-    this.fishImage.setPosition(HOOK_X, WATER_Y + 8).setAngle(0).setScale(0.8).setAlpha(1).setVisible(true);
+    this.fishImage.setTexture('fish-' + this.currentRarity.id);
+    this.fishImage.setPosition(HOOK_X, WATER_Y + 8).setAngle(0).setScale(FISH_STYLE[this.currentRarity.id].scale).setAlpha(1).setVisible(true);
     this.updateLine();
 
     this.tweens.add({
       targets: [this.hookImage, this.fishImage],
-      y: 340,
+      y: 300,
       angle: 35,
       duration: 520,
       ease: 'Back.easeOut',
@@ -898,19 +1189,40 @@ class FishingScene extends Phaser.Scene {
 
   hideFishingVisuals() {
     this.rippleTimer = this.cancelTimer(this.rippleTimer);
+    this.bubbleTimer = this.cancelTimer(this.bubbleTimer);
+    this.marineTimer = this.cancelTimer(this.marineTimer);
     this.qteFailTimer = this.cancelTimer(this.qteFailTimer);
     this.tweens.killTweensOf([this.hookImage, this.fishImage]);
 
+    this.marineFish.forEach((m) => m.destroy());
+    this.marineFish = [];
+
     this.hookImage.setVisible(false);
     this.fishImage.setVisible(false);
+    this.shoreGfx.setVisible(false);
     this.waterGfx.setVisible(false);
+    this.seaweedGfx.setVisible(false);
+    this.rodGfx.setVisible(false);
+    this.waveGfx.setVisible(false);
     this.lineGfx.setVisible(false);
   }
 
   showFishingVisuals() {
+    this.shoreGfx.setVisible(true);
     this.waterGfx.setVisible(true);
+    this.seaweedGfx.setVisible(true);
+    this.rodGfx.setVisible(true);
+    this.waveGfx.setVisible(true);
     this.lineGfx.setVisible(true);
     this.resetHook();
+    this.startBubbles();
+    this.marineTimer = this.cancelTimer(this.marineTimer);
+    this.marineTimer = this.time.addEvent({
+      delay: 1800,
+      loop: true,
+      callback: this.makeMarineFish,
+      callbackScope: this,
+    });
   }
 
   endGame() {
@@ -933,7 +1245,6 @@ class FishingScene extends Phaser.Scene {
     this.updateTimeBar(0);
     this.setFishingState(State.GAME_OVER);
 
-    this.rarityText.setText('');
     this.messageText.setText('');
     this.biteText.setVisible(false);
 
@@ -973,10 +1284,8 @@ class FishingScene extends Phaser.Scene {
     this.updateTimeBar(GAME_DURATION * 1000);
 
     this.messageText.setVisible(true);
-    this.rarityText.setVisible(true);
 
-    this.hudMoneyText.setScale(1).setText(`Dinero: $${this.money}`);
-    this.rarityText.setText('');
+    this.hudMoneyText.setScale(1).setText(`$${this.money}`);
     this.messageText.setText('').setScale(1);
     this.sequenceText.setText('');
     this.progressText.setText('');
