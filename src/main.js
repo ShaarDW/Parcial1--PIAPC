@@ -71,6 +71,7 @@ const ROD_X = 70;
 const ROD_Y = 120;
 const HOOK_X = 400;
 const WATER_Y = 492;
+const REEL_TO_X = 110;
 
 const KEYCODES = Phaser.Input.Keyboard.KeyCodes;
 
@@ -93,6 +94,10 @@ class FishingScene extends Phaser.Scene {
     this.money = 0;
     this.gameEndTime = this.time.now + GAME_DURATION * 1000;
     this.marineFish = [];
+
+    this.isTouch =
+      !!this.sys.game.device.input.touch ||
+      (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches);
 
     this.makeHookTexture();
     this.makeArrowTexture();
@@ -210,7 +215,7 @@ class FishingScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.gameOverHintText = this.add
-      .text(400, 330, 'Presiona ENTER para reiniciar', {
+      .text(400, 330, this.isTouch ? '' : 'Presiona ENTER para reiniciar', {
         fontSize: '22px',
         fontFamily: FONT_FAMILY,
         color: '#ffff00',
@@ -223,6 +228,11 @@ class FishingScene extends Phaser.Scene {
       this.gameOverMoneyText,
       this.gameOverHintText,
     ]);
+
+    if (this.isTouch) {
+      this.gameOverTouchBtn = this.makeTouchButton(400, 445, 260, 52, 'TOCAR PARA REINICIAR', () => this.doEnter());
+      this.gameOverScreen.add(this.gameOverTouchBtn);
+    }
 
     this.titleScreen = this.add.container(0, 0);
 
@@ -270,7 +280,7 @@ class FishingScene extends Phaser.Scene {
     this.titleSwimmerB = this.add.image(840, 370, 'fish-epic').setAngle(15).setScale(0.6);
 
     this.titleHintText = this.add
-      .text(400, 470, 'Presiona ENTER para continuar', {
+      .text(400, 470, this.isTouch ? '' : 'Presiona ENTER para continuar', {
         fontSize: '24px',
         fontFamily: FONT_FAMILY,
         color: '#ffff00',
@@ -285,6 +295,11 @@ class FishingScene extends Phaser.Scene {
       this.titleSwimmerB,
       this.titleHintText,
     ]);
+
+    if (this.isTouch) {
+      this.titleTouchBtn = this.makeTouchButton(400, 526, 260, 52, 'TOCAR PARA EMPEZAR', () => this.doEnter());
+      this.titleScreen.add(this.titleTouchBtn);
+    }
 
     this.controlsScreen = this.add.container(0, 0).setVisible(false);
 
@@ -348,7 +363,7 @@ class FishingScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.controlsHintText = this.add
-      .text(400, 498, 'Presiona ENTER para comenzar', {
+      .text(400, 498, this.isTouch ? '' : 'Presiona ENTER para comenzar', {
         fontSize: '24px',
         fontFamily: FONT_FAMILY,
         color: '#ffff00',
@@ -366,6 +381,39 @@ class FishingScene extends Phaser.Scene {
       this.controlsLineObjective,
       this.controlsHintText,
     ]);
+
+    if (this.isTouch) {
+      this.controlsTouchBtn = this.makeTouchButton(400, 526, 260, 52, 'TOCAR PARA EMPEZAR', () => this.doEnter());
+      this.controlsScreen.add(this.controlsTouchBtn);
+    }
+
+    this.playTouchControls = this.add.container(0, 0).setVisible(false);
+
+    this.catchBtn = this.makeTouchButton(400, 522, 200, 48, 'TOCA PARA PESCAR', () => this.doCatch());
+    this.playTouchControls.add(this.catchBtn);
+
+    this.dpadBtns = [];
+    const dpadXs = [290, 340, 390, 440];
+    const dpadTokens = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+    const dpadAngles = [0, 180, -90, 90];
+    dpadXs.forEach((dx, i) => {
+      const bg = this.add.graphics();
+      bg.fillStyle(0x222222, 1).fillRoundedRect(dx - 28, 556 - 26, 56, 52, 10);
+      bg.lineStyle(2, 0xffffff, 0.8).strokeRoundedRect(dx - 28, 556 - 26, 56, 52, 10);
+      bg.setInteractive({
+        hitArea: new Phaser.Geom.Rectangle(dx - 28, 556 - 26, 56, 52),
+        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      });
+      const arrowImg = this.add.image(dx, 556, 'arrow').setAngle(dpadAngles[i]).setOrigin(0.5).setTint(0xffffff).setScale(0.9);
+      bg.on('pointerdown', () => this.doArrow(dpadTokens[i]));
+      const btn = this.add.container(0, 0, [bg, arrowImg]);
+      this.playTouchControls.add(btn);
+      this.dpadBtns.push({ btn, bg });
+    });
+
+    if (this.isTouch) {
+      this.setDpadActive(false);
+    }
 
     this.input.keyboard.on('keydown', this.onKeyDown, this);
     this.input.keyboard.addCapture([
@@ -490,6 +538,7 @@ class FishingScene extends Phaser.Scene {
     this.controlsScreen.setVisible(false);
     this.gameOverScreen.setVisible(false);
     this.qteContainer.setVisible(false);
+    this.playTouchControls.setVisible(false);
 
     this.hudPanel.setVisible(false);
     this.hudMoneyText.setVisible(false);
@@ -509,6 +558,7 @@ class FishingScene extends Phaser.Scene {
     this.controlsScreen.setVisible(true);
     this.gameOverScreen.setVisible(false);
     this.qteContainer.setVisible(false);
+    this.playTouchControls.setVisible(false);
 
     this.hudPanel.setVisible(false);
     this.hudMoneyText.setVisible(false);
@@ -524,6 +574,12 @@ class FishingScene extends Phaser.Scene {
     this.qteFailed = false;
     this.qteFailTimer = this.cancelTimer(this.qteFailTimer);
 
+    if (this.catchBtn) {
+      this.tweens.killTweensOf(this.catchBtn);
+      this.catchBtn.setScale(1);
+    }
+    this.setDpadActive(false);
+
     this.currentRarity = null;
     this.messageText.setText('');
     this.messageText.setScale(1);
@@ -536,47 +592,51 @@ class FishingScene extends Phaser.Scene {
     this.castTimer = this.time.delayedCall(CAST_PRESENTATION_MS, this.enterWait, [], this);
   }
 
+  doEnter() {
+    this.unlockAudio();
+    this.playSfx('enter');
+    if (this.screen === Screen.TITLE) {
+      this.showControls();
+    } else if (this.screen === Screen.CONTROLS) {
+      this.startNewGame();
+    } else if (this.fishingState === State.GAME_OVER) {
+      this.showTitle();
+    }
+  }
+
+  doCatch() {
+    if (this.fishingState === State.BITE) {
+      this.startQte();
+    }
+  }
+
+  doArrow(token) {
+    if (this.fishingState === State.QTE) {
+      this.handleQteInput(token);
+    }
+  }
+
   onKeyDown(event) {
     if (event.repeat) {
       return;
     }
 
-    if (this.screen === Screen.TITLE) {
+    if (this.screen === Screen.TITLE || this.screen === Screen.CONTROLS || this.fishingState === State.GAME_OVER) {
       if (event.keyCode === KEYCODES.ENTER) {
-        this.unlockAudio();
-        this.playSfx('enter');
-        this.showControls();
-      }
-      return;
-    }
-
-    if (this.screen === Screen.CONTROLS) {
-      if (event.keyCode === KEYCODES.ENTER) {
-        this.unlockAudio();
-        this.playSfx('enter');
-        this.startNewGame();
-      }
-      return;
-    }
-
-    if (this.fishingState === State.GAME_OVER) {
-      if (event.keyCode === KEYCODES.ENTER) {
-        this.unlockAudio();
-        this.playSfx('enter');
-        this.showTitle();
+        this.doEnter();
       }
       return;
     }
 
     if (this.fishingState === State.BITE && event.keyCode === KEYCODES.Z) {
-      this.startQte();
+      this.doCatch();
       return;
     }
 
     if (this.fishingState === State.QTE) {
       const arrow = ARROW_BY_KEYCODE[event.keyCode];
       if (arrow !== undefined) {
-        this.handleQteInput(arrow);
+        this.doArrow(arrow);
       }
     }
   }
@@ -592,6 +652,19 @@ class FishingScene extends Phaser.Scene {
   enterBite() {
     this.setFishingState(State.BITE);
     this.currentRarity = selectRarity();
+
+    if (this.catchBtn) {
+      this.tweens.killTweensOf(this.catchBtn);
+      this.catchBtn.setScale(1);
+      this.tweens.add({
+        targets: this.catchBtn,
+        scale: { from: 1, to: 1.15 },
+        duration: 350,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
 
     this.playSfx('bite');
     this.showHookBite();
@@ -613,6 +686,12 @@ class FishingScene extends Phaser.Scene {
     this.sequence = generateSequence(this.currentRarity.sequenceLength);
     this.qteIndex = 0;
     this.qteStartTime = this.time.now;
+
+    if (this.catchBtn) {
+      this.tweens.killTweensOf(this.catchBtn);
+      this.catchBtn.setScale(1);
+    }
+    this.setDpadActive(true);
 
     this.biteText.setVisible(false);
     this.qteContainer.setVisible(true);
@@ -655,6 +734,7 @@ class FishingScene extends Phaser.Scene {
       }
 
       this.playSfx('tick' + Math.min(6, this.qteIndex - 1));
+      this.reelHookProgress();
       this.updateQteDisplay();
       return;
     }
@@ -783,6 +863,7 @@ class FishingScene extends Phaser.Scene {
 
     this.qteContainer.setVisible(false);
     this.qteCountdownText.setText('');
+    this.setDpadActive(false);
 
     this.setFishingState(State.RESULT);
 
@@ -1214,6 +1295,36 @@ class FishingScene extends Phaser.Scene {
     });
   }
 
+  makeTouchButton(x, y, w, h, label, onClick) {
+    const g = this.add.graphics();
+    g.fillStyle(0x2a6b46, 1).fillRoundedRect(-w / 2, -h / 2, w, h, 14);
+    g.lineStyle(3, 0xffffff, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 14);
+    g.setInteractive({ hitArea: new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
+
+    const t = this.add
+      .text(0, 0, label, {
+        fontSize: '26px',
+        fontWeight: 'bold',
+        fontFamily: FONT_FAMILY,
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
+
+    const btn = this.add.container(x, y, [g, t]);
+    btn.setSize(w, h);
+    g.on('pointerdown', onClick);
+    g.on('pointerover', () => g.setAlpha(0.9));
+    g.on('pointerout', () => g.setAlpha(1));
+    return btn;
+  }
+
+  setDpadActive(active) {
+    if (!this.dpadBtns) {
+      return;
+    }
+    this.dpadBtns.forEach(({ btn }) => btn.setAlpha(active ? 1 : 0.4));
+  }
+
   updateLine() {
     this.lineGfx.clear();
     this.lineGfx.lineStyle(2, 0xdddddd, 1);
@@ -1221,6 +1332,20 @@ class FishingScene extends Phaser.Scene {
     this.lineGfx.moveTo(ROD_X, ROD_Y);
     this.lineGfx.lineTo(this.hookImage.x, this.hookImage.y);
     this.lineGfx.strokePath();
+  }
+
+  reelHookProgress() {
+    const total = this.sequence ? this.sequence.length : 0;
+    const progress = total ? this.qteIndex / total : 0;
+    const x = HOOK_X + (REEL_TO_X - HOOK_X) * progress;
+    this.tweens.add({
+      targets: this.hookImage,
+      x,
+      y: WATER_Y,
+      duration: 150,
+      ease: 'Sine.easeOut',
+      onUpdate: () => this.updateLine(),
+    });
   }
 
   resetHook() {
@@ -1304,9 +1429,9 @@ class FishingScene extends Phaser.Scene {
   showFishCapture() {
     this.tweens.killTweensOf([this.hookImage, this.fishImage]);
     this.hookImage.setTint(0xffffff);
-    this.hookImage.setPosition(HOOK_X, WATER_Y);
+    this.hookImage.setPosition(REEL_TO_X, WATER_Y);
     this.fishImage.setTexture('fish-' + this.currentRarity.id);
-    this.fishImage.setPosition(HOOK_X, WATER_Y + 8).setAngle(0).setScale(FISH_STYLE[this.currentRarity.id].scale).setAlpha(1).setVisible(true);
+    this.fishImage.setPosition(REEL_TO_X, WATER_Y + 8).setAngle(0).setScale(FISH_STYLE[this.currentRarity.id].scale).setAlpha(1).setVisible(true);
     this.updateLine();
 
     this.tweens.add({
@@ -1320,15 +1445,15 @@ class FishingScene extends Phaser.Scene {
 
     this.tweens.add({
       targets: [this.hookImage, this.fishImage],
-      y: WATER_Y + 40,
-      angle: -20,
+      y: WATER_Y,
+      angle: 0,
       duration: 340,
       delay: 520,
       ease: 'Sine.easeIn',
       onUpdate: () => this.updateLine(),
       onComplete: () => {
         this.fishImage.setVisible(false);
-        this.hookImage.setPosition(HOOK_X, WATER_Y);
+        this.hookImage.setPosition(REEL_TO_X, WATER_Y);
       },
     });
   }
@@ -1434,6 +1559,7 @@ class FishingScene extends Phaser.Scene {
     this.controlsScreen.setVisible(false);
     this.gameOverScreen.setVisible(false);
     this.qteContainer.setVisible(false);
+    this.playTouchControls.setVisible(this.isTouch);
 
     this.hudPanel.setVisible(true);
     this.hudMoneyText.setVisible(true);
@@ -1475,6 +1601,15 @@ const config = {
   width: 800,
   height: 600,
   backgroundColor: '#1e90ff',
+  input: {
+    activePointers: 2,
+  },
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: 800,
+    height: 600,
+  },
   scene: FishingScene,
 };
 
