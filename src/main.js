@@ -27,6 +27,8 @@ const STATE_COLORS = {
   [State.GAME_OVER]: 0xff0000,
 };
 
+const FONT_FAMILY = "'Comic Sans MS', 'Comic Sans', Cursive";
+
 const CAST_PRESENTATION_MS = 500;
 const RESULT_FEEDBACK_MS = 1500;
 const WRONGKEY_RED_MS = 1000;
@@ -82,9 +84,11 @@ class FishingScene extends Phaser.Scene {
       .text(20, 30, `Dinero: $${this.money}`, {
         fontSize: '20px',
         fontWeight: 'bold',
-        color: '#ffffff',
+        fontFamily: FONT_FAMILY,
+        color: '#39ff14',
       })
-      .setOrigin(0, 0);
+      .setOrigin(0, 0)
+      .setStroke('#003300', 3);
 
     this.hudTimeBar = this.add.graphics();
     this.updateTimeBar(GAME_DURATION * 1000);
@@ -93,6 +97,7 @@ class FishingScene extends Phaser.Scene {
       .text(400, 260, '', {
         fontSize: '32px',
         fontWeight: 'bold',
+        fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
       .setOrigin(0.5);
@@ -100,6 +105,7 @@ class FishingScene extends Phaser.Scene {
     this.rarityText = this.add
       .text(400, 320, '', {
         fontSize: '24px',
+        fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
       .setOrigin(0.5);
@@ -108,6 +114,7 @@ class FishingScene extends Phaser.Scene {
       .text(400, 210, '', {
         fontSize: '40px',
         fontWeight: 'bold',
+        fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
       .setOrigin(0.5)
@@ -121,7 +128,7 @@ class FishingScene extends Phaser.Scene {
     this.sequenceText = this.add
       .text(400, 350, '', {
         fontSize: '28px',
-        fontFamily: 'monospace',
+        fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
       .setOrigin(0.5);
@@ -129,6 +136,7 @@ class FishingScene extends Phaser.Scene {
     this.progressText = this.add
       .text(400, 388, '', {
         fontSize: '18px',
+        fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
       .setOrigin(0.5);
@@ -136,6 +144,7 @@ class FishingScene extends Phaser.Scene {
     this.qteTimerText = this.add
       .text(400, 422, '', {
         fontSize: '18px',
+        fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
       .setOrigin(0.5);
@@ -161,6 +170,7 @@ class FishingScene extends Phaser.Scene {
       .text(400, 190, 'PARTIDA TERMINADA', {
         fontSize: '44px',
         fontWeight: 'bold',
+        fontFamily: FONT_FAMILY,
         color: '#ff4444',
       })
       .setOrigin(0.5);
@@ -169,6 +179,7 @@ class FishingScene extends Phaser.Scene {
       .text(400, 260, '', {
         fontSize: '30px',
         fontWeight: 'bold',
+        fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
       .setOrigin(0.5);
@@ -176,6 +187,7 @@ class FishingScene extends Phaser.Scene {
     this.gameOverHintText = this.add
       .text(400, 330, 'Presiona ENTER para reiniciar', {
         fontSize: '22px',
+        fontFamily: FONT_FAMILY,
         color: '#ffff00',
       })
       .setOrigin(0.5);
@@ -198,6 +210,7 @@ class FishingScene extends Phaser.Scene {
       .text(400, 220, 'SILLY FISHING', {
         fontSize: '64px',
         fontWeight: 'bold',
+        fontFamily: FONT_FAMILY,
         color: '#ffff00',
       })
       .setOrigin(0.5)
@@ -212,6 +225,7 @@ class FishingScene extends Phaser.Scene {
     this.titleHintText = this.add
       .text(400, 470, 'Presiona ENTER para continuar', {
         fontSize: '24px',
+        fontFamily: FONT_FAMILY,
         color: '#ffff00',
       })
       .setOrigin(0.5);
@@ -232,6 +246,7 @@ class FishingScene extends Phaser.Scene {
       .text(400, 140, '¿CÓMO JUGAR?', {
         fontSize: '44px',
         fontWeight: 'bold',
+        fontFamily: FONT_FAMILY,
         color: '#ffff00',
       })
       .setOrigin(0.5)
@@ -240,6 +255,7 @@ class FishingScene extends Phaser.Scene {
     this.controlsLineZ = this.add
       .text(400, 240, 'Z — Reaccioná cuando el pez muerda', {
         fontSize: '24px',
+        fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
       .setOrigin(0.5);
@@ -247,6 +263,7 @@ class FishingScene extends Phaser.Scene {
     this.controlsLineArrows = this.add
       .text(400, 300, '↑ ↓ ← → — Completá la secuencia', {
         fontSize: '24px',
+        fontFamily: FONT_FAMILY,
         color: '#ffffff',
       })
       .setOrigin(0.5);
@@ -254,6 +271,7 @@ class FishingScene extends Phaser.Scene {
     this.controlsLineObjective = this.add
       .text(400, 360, 'Objetivo: juntá la mayor cantidad de dinero\nantes de que termine el tiempo', {
         fontSize: '22px',
+        fontFamily: FONT_FAMILY,
         color: '#ffffff',
         align: 'center',
       })
@@ -262,6 +280,7 @@ class FishingScene extends Phaser.Scene {
     this.controlsHintText = this.add
       .text(400, 480, 'Presiona ENTER para comenzar', {
         fontSize: '24px',
+        fontFamily: FONT_FAMILY,
         color: '#ffff00',
       })
       .setOrigin(0.5);
@@ -663,6 +682,7 @@ class FishingScene extends Phaser.Scene {
       .text(400, 300, `+$${reward}`, {
         fontSize: '28px',
         fontWeight: 'bold',
+        fontFamily: FONT_FAMILY,
         color: '#ffd700',
       })
       .setOrigin(0.5);
