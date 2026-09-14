@@ -98,6 +98,8 @@ class FishingScene extends Phaser.Scene {
     this.makeArrowTexture();
     this.makeFishTextures();
 
+    this.createSfx();
+
     this.shoreGfx = this.add.graphics();
     this.shoreGfx.fillStyle(0x0a3d5f, 0.5).fillRect(0, 430, 800, 40);
 
@@ -169,41 +171,20 @@ class FishingScene extends Phaser.Scene {
     this.qtePanel = this.add.graphics();
     this.updateQtePanel(0xffffff);
 
-    this.sequenceText = this.add
-      .text(400, 350, '', {
-        fontSize: '28px',
-        fontFamily: FONT_FAMILY,
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
-
-    this.progressText = this.add
-      .text(400, 388, '', {
-        fontSize: '20px',
-        fontFamily: FONT_FAMILY,
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
-
-    this.qteTimerText = this.add
-      .text(400, 422, '', {
-        fontSize: '20px',
-        fontFamily: FONT_FAMILY,
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
-
     this.qteProgressBar = this.add.graphics();
     this.qteTimeBar = this.add.graphics();
 
-    this.qteContainer.add([
-      this.qtePanel,
-      this.sequenceText,
-      this.progressText,
-      this.qteTimerText,
-      this.qteProgressBar,
-      this.qteTimeBar,
-    ]);
+    this.qteCountdownText = this.add
+      .text(400, 448, '', {
+        fontSize: '15px',
+        fontWeight: 'bold',
+        fontFamily: FONT_FAMILY,
+        color: '#ffffff',
+      })
+      .setOrigin(0.5)
+      .setStroke('#000000', 3);
+
+    this.qteContainer.add([this.qtePanel, this.qteCountdownText, this.qteProgressBar, this.qteTimeBar]);
 
     this.gameOverScreen = this.add.container(0, 0).setVisible(false);
 
@@ -490,11 +471,16 @@ class FishingScene extends Phaser.Scene {
     this.hudTimeBar.fillStyle(0x00ccff, 1).fillRoundedRect(420, 22, 360 * fraction, 12, 6);
   }
 
-  updateQtePanel(color) {
+  updateQtePanel(color, count) {
+    const slotW = 56;
+    const slotGap = 14;
+    const width = count ? count * slotW + (count - 1) * slotGap + 24 : 320;
+    const x = 400 - width / 2;
+
     this.qtePanel.clear();
-    this.qtePanel.fillStyle(0x000000, 0.35).fillRoundedRect(240, 330, 320, 130, 12);
+    this.qtePanel.fillStyle(0x000000, 0.35).fillRoundedRect(x, 330, width, 130, 12);
     this.qtePanel.lineStyle(3, color, 1);
-    this.qtePanel.strokeRoundedRect(240, 330, 320, 130, 12);
+    this.qtePanel.strokeRoundedRect(x, 330, width, 130, 12);
   }
 
   showTitle() {
@@ -557,6 +543,8 @@ class FishingScene extends Phaser.Scene {
 
     if (this.screen === Screen.TITLE) {
       if (event.keyCode === KEYCODES.ENTER) {
+        this.unlockAudio();
+        this.playSfx('enter');
         this.showControls();
       }
       return;
@@ -564,6 +552,8 @@ class FishingScene extends Phaser.Scene {
 
     if (this.screen === Screen.CONTROLS) {
       if (event.keyCode === KEYCODES.ENTER) {
+        this.unlockAudio();
+        this.playSfx('enter');
         this.startNewGame();
       }
       return;
@@ -571,6 +561,8 @@ class FishingScene extends Phaser.Scene {
 
     if (this.fishingState === State.GAME_OVER) {
       if (event.keyCode === KEYCODES.ENTER) {
+        this.unlockAudio();
+        this.playSfx('enter');
         this.showTitle();
       }
       return;
@@ -591,6 +583,7 @@ class FishingScene extends Phaser.Scene {
 
   enterWait() {
     this.setFishingState(State.WAIT);
+    this.playSfx('splash');
     this.showHookWait();
     const waitMs = Phaser.Math.Between(WAIT_MS_MIN, WAIT_MS_MAX);
     this.waitTimer = this.time.delayedCall(waitMs, this.enterBite, [], this);
@@ -600,6 +593,7 @@ class FishingScene extends Phaser.Scene {
     this.setFishingState(State.BITE);
     this.currentRarity = selectRarity();
 
+    this.playSfx('bite');
     this.showHookBite();
 
     this.biteText.setText('¡PICA!').setVisible(true).setAlpha(1).setScale(0.6).setColor('#ffffff');
@@ -622,7 +616,7 @@ class FishingScene extends Phaser.Scene {
 
     this.biteText.setVisible(false);
     this.qteContainer.setVisible(true);
-    this.updateQtePanel(RARITY_HEX[this.currentRarity.id]);
+    this.updateQtePanel(RARITY_HEX[this.currentRarity.id], this.sequence.length);
     this.showHookQte();
 
     this.qteTimer = this.time.addEvent({
@@ -660,6 +654,7 @@ class FishingScene extends Phaser.Scene {
         return;
       }
 
+      this.playSfx('tick' + Math.min(6, this.qteIndex - 1));
       this.updateQteDisplay();
       return;
     }
@@ -667,6 +662,7 @@ class FishingScene extends Phaser.Scene {
     this.qteTimer = this.cancelTimer(this.qteTimer);
     this.qteCountdownTimer = this.cancelTimer(this.qteCountdownTimer);
     this.qteFailed = true;
+    this.playSfx('wrong');
 
     const currentSprite = this.qteArrowSprites && this.qteArrowSprites[this.qteIndex];
     if (currentSprite) {
@@ -699,7 +695,7 @@ class FishingScene extends Phaser.Scene {
     const slotW = 56;
     const gap = 14;
     const total = count * slotW + (count - 1) * gap;
-    const y = 350;
+    const y = 358;
     let x = 400 - total / 2 + slotW / 2;
 
     for (let i = 0; i < count; i++) {
@@ -749,13 +745,13 @@ class FishingScene extends Phaser.Scene {
   updateQteCountdown() {
     const remainingMs = QTE_DURATION * 1000 - (this.time.now - this.qteStartTime);
     const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
-    this.qteTimerText.setText(`Tiempo: ${remainingSeconds}s`);
+    this.qteCountdownText.setText(`Tiempo: ${remainingSeconds}s`);
 
     this.qteTimeBar.clear();
-    this.qteTimeBar.fillStyle(0x333333, 1).fillRoundedRect(300, 432, 200, 8, 4);
+    this.qteTimeBar.fillStyle(0x333333, 1).fillRoundedRect(300, 442, 200, 12, 6);
 
     const fraction = Math.max(0, Math.min(1, remainingMs / (QTE_DURATION * 1000)));
-    this.qteTimeBar.fillStyle(0xffcc33, 1).fillRoundedRect(300, 432, 200 * fraction, 8, 4);
+    this.qteTimeBar.fillStyle(0xffcc33, 1).fillRoundedRect(300, 442, 200 * fraction, 12, 6);
   }
 
   resolveQte(outcome) {
@@ -786,9 +782,7 @@ class FishingScene extends Phaser.Scene {
     };
 
     this.qteContainer.setVisible(false);
-    this.sequenceText.setText('');
-    this.progressText.setText('');
-    this.qteTimerText.setText('');
+    this.qteCountdownText.setText('');
 
     this.setFishingState(State.RESULT);
 
@@ -809,11 +803,13 @@ class FishingScene extends Phaser.Scene {
       this.flashMoney();
       this.showFishCapture();
       const tier = TIER_LEVEL[this.currentRarity.id];
+      this.playSfx(tier >= 2 ? 'success_big' : 'success');
       this.celebrate(RARITY_HEX[this.currentRarity.id], tier);
       if (tier >= 3) {
         this.cameras.main.shake(200, 0.01);
       }
     } else {
+      this.playSfx('fail');
       this.messageText.setText('FALLO').setColor('#ff0000').setScale(0.6);
       this.tweens.add({
         targets: this.messageText,
@@ -916,6 +912,168 @@ class FishingScene extends Phaser.Scene {
     g.fillRect(19, 24, 10, 20);
     g.generateTexture('arrow', 48, 46);
     g.destroy();
+  }
+
+  createSfx() {
+    this.sfx = {};
+    const ctx = this.sound && this.sound.context;
+    if (!ctx) {
+      return;
+    }
+
+    const cache = this.game.cache.audio;
+    const register = (key, buffer, volume) => {
+      cache.add(key, buffer);
+      this.sfx[key] = this.sound.add(key, { volume });
+    };
+
+    const waveform = (type, phase) => {
+      const frac = (phase % (2 * Math.PI)) / (2 * Math.PI);
+      if (type === 'saw') {
+        return frac * 2 - 1;
+      }
+      if (type === 'triangle') {
+        return frac < 0.5 ? frac * 4 - 1 : 3 - frac * 4;
+      }
+      return Math.sin(phase);
+    };
+
+    const toneBuffer = (type, f0, f1, dur, peak, decay) => {
+      const sr = ctx.sampleRate;
+      const n = Math.max(1, Math.floor(sr * dur));
+      const buffer = ctx.createBuffer(1, n, sr);
+      const data = buffer.getChannelData(0);
+      let phase = 0;
+      for (let i = 0; i < n; i++) {
+        const t = i / n;
+        phase += (2 * Math.PI * (f0 + (f1 - f0) * t)) / sr;
+        data[i] = waveform(type, phase) * peak * Math.pow(1 - t, decay);
+      }
+      return buffer;
+    };
+
+    const noiseBuffer = (dur, peak, decay, smooth) => {
+      const sr = ctx.sampleRate;
+      const n = Math.max(1, Math.floor(sr * dur));
+      const buffer = ctx.createBuffer(1, n, sr);
+      const data = buffer.getChannelData(0);
+      let lp = 0;
+      for (let i = 0; i < n; i++) {
+        lp += (Math.random() * 2 - 1 - lp) * smooth;
+        data[i] = lp * peak * Math.pow(1 - i / n, decay);
+      }
+      return buffer;
+    };
+
+    const silenceBuffer = (dur) => {
+      const sr = ctx.sampleRate;
+      const n = Math.max(1, Math.floor(sr * dur));
+      const buffer = ctx.createBuffer(1, n, sr);
+      return buffer;
+    };
+
+    const concat = (parts) => {
+      const sr = ctx.sampleRate;
+      const total = parts.reduce((sum, part) => sum + part.length, 0);
+      const buffer = ctx.createBuffer(1, total, sr);
+      const data = buffer.getChannelData(0);
+      let offset = 0;
+      for (const part of parts) {
+        data.set(part.getChannelData(0), offset);
+        offset += part.length;
+      }
+      return buffer;
+    };
+
+    const note = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
+
+    register(
+      'splash',
+      concat([noiseBuffer(0.3, 0.5, 2.5, 0.08), toneBuffer('sine', 300, 100, 0.28, 0.4, 3)]),
+      0.25
+    );
+
+    register(
+      'bite',
+      concat([toneBuffer('sine', 660, 660, 0.09, 0.35, 4), silenceBuffer(0.055), toneBuffer('sine', 880, 880, 0.1, 0.4, 4)]),
+      0.3
+    );
+
+    for (let i = 0; i < 7; i++) {
+      register(`tick${i}`, toneBuffer('sine', note(69 + i * 2), note(69 + i * 2), 0.09, 0.3, 4), 0.22);
+    }
+
+    register('wrong', toneBuffer('saw', 150, 105, 0.22, 0.35, 3), 0.3);
+
+    register(
+      'success',
+      concat([
+        toneBuffer('sine', note(72), note(72), 0.12, 0.35, 4),
+        silenceBuffer(0.04),
+        toneBuffer('sine', note(76), note(76), 0.12, 0.35, 4),
+        silenceBuffer(0.04),
+        toneBuffer('sine', note(79), note(79), 0.12, 0.35, 4),
+        silenceBuffer(0.04),
+        toneBuffer('sine', note(84), note(84), 0.24, 0.38, 4),
+      ]),
+      0.3
+    );
+
+    register(
+      'success_big',
+      concat([
+        toneBuffer('sine', note(72), note(72), 0.14, 0.35, 4),
+        silenceBuffer(0.05),
+        toneBuffer('sine', note(76), note(76), 0.14, 0.35, 4),
+        silenceBuffer(0.05),
+        toneBuffer('sine', note(79), note(79), 0.14, 0.35, 4),
+        silenceBuffer(0.05),
+        toneBuffer('sine', note(84), note(84), 0.14, 0.35, 4),
+        silenceBuffer(0.05),
+        toneBuffer('sine', note(88), note(88), 0.34, 0.38, 4),
+      ]),
+      0.32
+    );
+
+    register(
+      'fail',
+      concat([
+        toneBuffer('sine', note(64), note(64), 0.16, 0.3, 4),
+        silenceBuffer(0.04),
+        toneBuffer('sine', note(59), note(59), 0.16, 0.3, 4),
+        silenceBuffer(0.05),
+        toneBuffer('saw', 110, 80, 0.3, 0.25, 3),
+      ]),
+      0.28
+    );
+
+    register('enter', toneBuffer('sine', 660, 660, 0.06, 0.18, 4), 0.15);
+
+    register(
+      'gameover',
+      concat([
+        toneBuffer('sine', note(57), note(57), 0.22, 0.3, 4),
+        silenceBuffer(0.05),
+        toneBuffer('sine', note(53), note(53), 0.22, 0.3, 4),
+        silenceBuffer(0.05),
+        toneBuffer('sine', note(50), note(50), 0.3, 0.3, 4),
+      ]),
+      0.25
+    );
+  }
+
+  playSfx(name) {
+    const sound = this.sfx && this.sfx[name];
+    if (sound) {
+      sound.play();
+    }
+  }
+
+  unlockAudio() {
+    const ctx = this.sound && this.sound.context;
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume();
+    }
   }
 
   makeFishTextures() {
@@ -1238,12 +1396,11 @@ class FishingScene extends Phaser.Scene {
     this.qteFailTimer = this.cancelTimer(this.qteFailTimer);
 
     this.qteContainer.setVisible(false);
-    this.sequenceText.setText('');
-    this.progressText.setText('');
-    this.qteTimerText.setText('');
+    this.qteCountdownText.setText('');
 
     this.updateTimeBar(0);
     this.setFishingState(State.GAME_OVER);
+    this.playSfx('gameover');
 
     this.messageText.setText('');
     this.biteText.setVisible(false);
@@ -1287,9 +1444,7 @@ class FishingScene extends Phaser.Scene {
 
     this.hudMoneyText.setScale(1).setText(`$${this.money}`);
     this.messageText.setText('').setScale(1);
-    this.sequenceText.setText('');
-    this.progressText.setText('');
-    this.qteTimerText.setText('');
+    this.qteCountdownText.setText('');
 
     this.showFishingVisuals();
 
