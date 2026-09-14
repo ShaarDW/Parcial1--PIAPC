@@ -9,7 +9,7 @@
 ## Comportamiento a resolver
 
 - Entidad: Sistema de pesca del puesto. Estados del anzuelo: lanzado, espera de pique, picada, QTE, captura/escape, relanzado y fin de partida.
-- Problema actual: No existe un bucle de pesca implementado; se debe crear el comportamiento completo de pesca definido para el juego.
+- Problema actual: Resuelto. El bucle de pesca completo definido en este GDD esta implementado y verificado (CA-1 a CA-9).
 - Comportamiento esperado: El anzuelo se lanza automaticamente al comenzar la partida; el jugador espera entre 3 y 5 segundos hasta que un pez pica; cuando pica debe presionar Z; aparece una secuencia de flechas que debe completar correctamente en hasta 6 segundos; si la completa captura el pez y recibe su recompensa; si se equivoca o agota el tiempo el pez se escapa; tras una captura o escape el anzuelo vuelve a lanzarse automoticamente mientras la partida continue; la partida dura 3 minutos.
 
 ## Reglas
@@ -28,14 +28,15 @@
   - Captura: secuencia completada correctamente dentro de los 6 segundos -> se otorga la recompensa segun la tabla y el anzuelo se relanza de inmediato.
   - Escape: entrada incorrecta o 6 segundos agotados -> sin recompensa y con feedback visual simple (texto e indicadores de estado). El anzuelo se relanza de inmediato.
   - Fin de partida: al llegar el contador a 0 la partida termina inmediatamente, incluso con un QTE activo; el pez en curso no otorga recompensa y no se relanza el anzuelo.
-- Accion del jugador o del entorno: Unico metodo de entrada: teclado. Z activa el QTE y las cuatro flechas direccionales completan la secuencia.
+- Accion del jugador o del entorno: Entrada por teclado (Z activa el QTE y las cuatro flechas direccionales completan la secuencia) y, en pantallas tactiles, botones en pantalla equivalentes (boton de pescar y D-pad de 4 flechas).
 - Resultado esperado: El jugador consigue la mayor cantidad de dinero posible durante los 3 minutos; no hay objetivo minimo. El HUD muestra como minimo el dinero acumulado, el tiempo restante y el estado actual de la pesca (feedback con texto y cambio de color simple). Al finalizar la partida se muestra una pantalla con el dinero total conseguido y una opcion para iniciar una nueva partida.
 - Caso limite: Si los 3 minutos terminan mientras el jugador esta intentando capturar un pez, la captura se interrumpe y la partida finaliza sin otorgar la recompensa de ese pez.
 
 ## Limites
 
-- Fuera de alcance: Audio, pausa, menu de configuracion, soporte tactil, persistencia de records, objetivo minimo de dinero, assets de arte final (el feedback se implementa con texto e indicadores simples).
-- Restricciones tecnicas: Phaser 4.2.1, JavaScript, Vite 8.3.0; entrada solo por teclado; sin dependencias no autorizadas; no se agregan funcionalidades fuera de esta especificacion.
+- Fuera de alcance: pausa, menu de configuracion, persistencia de records, objetivo minimo de dinero, assets de arte final (el feedback se implementa con texto e indicadores simples).
+- Extensiones aprobadas por el estudiante (originalmente fuera de alcance): **audio** (sonidos sintetizados en WebAudio, sin archivos) y **soporte tactil / canvas responsive** (deteccion de dispositivo, botones en pantalla, escalado `Scale.FIT` centrado). Registradas en `docs/especificacion.md` e `docs/registro-intervencion.md`.
+- Restricciones tecnicas: Phaser 4.2.1, JavaScript, Vite 8.3.0; entrada por teclado y por toque en pantallas tactiles; sin dependencias no autorizadas; no se agregan funcionalidades fuera de esta especificacion.
 - Criterios de aceptacion: CA-1 a CA-9 definidos en `docs/especificacion.md`.
 
 El GDD delimita la intencion de diseno. La especificacion y el plan convierten esa intencion en una intervencion tecnica verificable.

@@ -27,6 +27,22 @@ La autorizacion puntual de la etapa de scaffolding permitio:
 
 Esta autorizacion **NO incluyo** la implementacion del gameplay (estados de pesca, QTE, rarezas, recompensas, HUD, temporizador ni pantalla final). La implementacion queda pendiente de una autorizacion especifica.
 
+## Autorizaciones de implementacion otorgadas (bloques B1 a B13)
+
+El estudiante autorizo cada bloque de implementacion de forma explicita antes de ejecutarlo; a continuacion, el alcance acumulado de lo autorizado:
+
+- **B1 a B10 (sesiones previas)**: gameplay completo segun el GDD (constantes, ciclo de pesca, QTE, recompensas, relanzamiento, HUD, fin de partida, pantallas, escenario, vida marina y pulido). Permiti realizar una correccion manual sobre `Phaser.Utils.Array.GetRandom`.
+- **B11**: correccion del panel QTE (adaptativo, centrado, sin solapamiento con el HUD) y creacion de sonidos sintetizados WebAudio (sin archivos ni dependencias).
+- **B12**: canvas responsive centrado (`scale: Scale.FIT`, `CENTER_BOTH`) y CSS en `index.html`; recogido del sedal durante el QTE y captura junto a la cana.
+- **B13**: soporte tactil (deteccion de dispositivo, botones en pantalla, D-pad, `activePointers: 2`, `touch-action: none`).
+- **Entrega**: creacion de `tests/reglas.test.mjs`, actualizacion de la documentacion de proceso (`GDD.md`, `README.md`, `docs/`) y commit final (el push lo realiza el estudiante).
+
+## Autorizaciones que siguen vigentes
+
+- Publicar o subir cambios: **prohibida**; el push final lo ejecuta el estudiante.
+- Acceder a secretos o credenciales: **prohibida**.
+- Instalar dependencias o usar red: **prohibida** (no fueron necesarias tras el scaffolding).
+
 ## Condiciones de detencion
 
 - La accion a ejecutar no esta contemplada en esta matriz o excede su alcance -> detenerse y consultar.

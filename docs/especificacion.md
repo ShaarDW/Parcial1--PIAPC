@@ -22,11 +22,16 @@ Al terminar la partida, el dinero total depende solo de las capturas correctas r
   - Fin de partida al llegar a 0 el contador de 180 segundos (continuo, sin pausas).
   - Pantalla final con dinero total y nueva partida con Enter.
   - Feedback visual minimo con texto/indicadores simples; sin sprites finales.
-- No incluye: audio, pausa, menu de configuracion, soporte tactil, persistencia de records, objetivo minimo de dinero, assets de arte final, ni ninguna funcionalidad fuera del GDD.
+- Extensiones aprobadas por el estudiante (decision explicita, fuera del alcance original):
+  - **Audio**: sonidos sintetizados en tiempo de ejecucion con WebAudio (`game.cache.audio` + `sound.add`; splash, pique, tics del QTE, error, exito, fallo, fin de partida). Sin archivos ni dependencias de audio.
+  - **Canvas responsive**: escala `Phaser.Scale.FIT` con centrado `CENTER_BOTH` para que el lienzo (800x600) se adapte al monitor/ventana. `index.html` con CSS fullscreen centrado.
+  - **Recogido del sedal**: durante el QTE el anzuelo/sedal se recogen hacia la cana en funcion del avance; al capturar, el anzuelo queda junto a la cana (no vuelve a la posicion de lanzamiento).
+  - **Soporte tactil**: deteccion de dispositivo (`isTouch`), boton dedicado en menus, boton de pescar (equivalente a Z) y D-pad de 4 flechas (equivalente a las flechas); `activePointers: 2`.
+- No incluye: pausa, menu de configuracion, persistencia de records, objetivo minimo de dinero, assets de arte final, ni ninguna funcionalidad fuera del GDD y de las extensiones aprobadas.
 
 ## Restricciones
 
-- Tecnicas: Phaser 4.2.1, JavaScript, Vite 8.3.0; entrada solo por teclado (Z y las cuatro flechas direccionales); sin frameworks ni dependencias adicionales sin autorizacion.
+- Tecnicas: Phaser 4.2.1, JavaScript, Vite 8.3.0; entrada por teclado (Z y las cuatro flechas direccionales) y por toque en pantallas tactiles (botones equivalentes); sin frameworks ni dependencias adicionales sin autorizacion.
 - Operativas: no instalar, usar red ni publicar cambios sin autorizacion; editar solo archivos previstos en el plan; `node_modules/` y `dist/` deben permanecer ignorados por git.
 - De calidad: validacion por pruebas manuales reproducibles, registradas en `docs/evidencia-pruebas.md`; estados y errores comunicados visualmente de forma inequivoca; sin logs temporales de verificacion de rareza.
 
@@ -53,8 +58,9 @@ Al terminar la partida, el dinero total depende solo de las capturas correctas r
 - La recompensa otorgada por captura es exactamente la de la tabla segun la rareza.
 - Toda captura o escape implica relanzamiento inmediato si queda tiempo.
 - No se otorga recompensa si el contador de la partida llega a 0.
-- Las unicas entradas activas son Z y las cuatro flechas direccionales.
+- Las unicas entradas activas son Z y las cuatro flechas direccionales (o sus equivalentes tactiles: boton de pescar y D-pad).
 - El QTE nunca dura mas de 6 segundos.
+- En pantallas tactiles, `isTouch` detecta el dispositivo y se muestran los botones; en escritorio la entrada por teclado se mantiene identica.
 
 ## Preguntas abiertas
 
